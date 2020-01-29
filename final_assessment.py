@@ -46,10 +46,12 @@ def build_country_code_converter(codeinfo):
     """
     country_codes_dict = {}
     file_name = codeinfo.get("codefile")
-    with open(file_name, newline='') as csv_file:       # don't need to explicitly close the file now
-        csv_reader = csv.DictReader(csv_file, delimiter=',')
+    with open(file_name, newline='') as csv_file:
+        csv_reader = csv.DictReader(csv_file, delimiter=codeinfo.get("separator"), \
+        quotechar=codeinfo.get("quote"))
         for row in csv_reader:
-            country_codes_dict[row.get(codeinfo.get("plot_codes"))] = row.get(codeinfo.get("data_codes"))
+            country_codes_dict[row.get(codeinfo.get("plot_codes"))] = \
+            row.get(codeinfo.get("data_codes"))
 
     return country_codes_dict
 
@@ -100,9 +102,11 @@ def reconcile_countries_by_code(codeinfo, plot_countries, gdp_countries):
     converter_dict = build_country_code_converter(codeinfo)
 
     for plot_country_code in plot_countries:
-        lookup_data_code = converter_dict.get(plot_country_code.upper())
-        if lookup_data_code in  gdp_countries:
-            recon_gdp_countries_dict[plot_country_code] = lookup_data_code
+        lookup_code_upper = converter_dict.get(plot_country_code.upper())
+        #lookup_code_lower= converter_dict.get(plot_country_code.lower())
+        if lookup_code_upper in gdp_countries:
+            recon_gdp_countries_dict[plot_country_code] = \
+            converter_dict.get(plot_country_code.upper())
         else:
             missing_plot_countries.add(plot_country_code)
 
@@ -137,7 +141,8 @@ def build_map_dict_by_code(gdpinfo, codeinfo, plot_countries, year):
     #print("gdp_countries:")
     #print(gdp_countries)
 
-    recon_gdp_countries_dict_res = reconcile_countries_by_code(codeinfo, plot_countries, gdp_countries)
+    recon_gdp_countries_dict_res = reconcile_countries_by_code(codeinfo, \
+    plot_countries, gdp_countries)
     recon_gdp_countries_dict = recon_gdp_countries_dict_res[0]
     #print("Recon countries:")
     #print(recon_gdp_countries_dict)
@@ -147,8 +152,8 @@ def build_map_dict_by_code(gdpinfo, codeinfo, plot_countries, year):
         if code in recon_gdp_countries_dict:
             gdp_code = recon_gdp_countries_dict.get(code)
             tmp_country_gdpdata = gdp_countries.get(gdp_code)
-            #print("tmp_country_gdpdata")
-            #print(tmp_country_gdpdata)
+            print("tmp_country_gdpdata")
+            print(tmp_country_gdpdata)
             gdp_data_year = tmp_country_gdpdata.get(year)
             #print(gdp_data_year)
             if (gdp_data_year == ""):
@@ -192,7 +197,7 @@ def test_build_map_dict_by_code():
     print(res[1])
     print(res[2])
 
-test_build_map_dict_by_code()
+#test_build_map_dict_by_code()
 
 def render_world_map(gdpinfo, codeinfo, plot_countries, year, map_file):
     """
@@ -210,7 +215,20 @@ def render_world_map(gdpinfo, codeinfo, plot_countries, year, map_file):
       Creates a world map plot of the GDP data in gdp_mapping and outputs
       it to a file named by svg_filename.
     """
-    return
+    # Initialise map
+    world_map = pygal.maps.world.World()
+    world_map.title = 'Counry GDP Chart'
+
+    # get XY plot dictionary for the given country lists
+    world_plot_dict = build_map_dict_by_code(gdpinfo, codeinfo, plot_countries, year)
+
+    world_map.add("GDP", world_plot_dict[0])
+    world_map.add("Missing Country", world_plot_dict[1])
+    world_map.add("Missing GDP", world_plot_dict[2])
+
+    # render Character
+    #world_map.render_to_file(map_file)
+    world_map.render_in_browser()
 
 
 def test_render_world_map():
@@ -239,13 +257,13 @@ def test_render_world_map():
     pygal_countries = pygal.maps.world.COUNTRIES
 
     # 1960
-    render_world_map(gdpinfo, codeinfo, pygal_countries, "1960", "isp_gdp_world_code_1960.svg")
+    #render_world_map(gdpinfo, codeinfo, pygal_countries, "1960", "isp_gdp_world_code_1960.svg")
 
     # 1980
-    render_world_map(gdpinfo, codeinfo, pygal_countries, "1980", "isp_gdp_world_code_1980.svg")
+    #render_world_map(gdpinfo, codeinfo, pygal_countries, "1980", "isp_gdp_world_code_1980.svg")
 
     # 2000
-    render_world_map(gdpinfo, codeinfo, pygal_countries, "2000", "isp_gdp_world_code_2000.svg")
+    #render_world_map(gdpinfo, codeinfo, pygal_countries, "2000", "isp_gdp_world_code_2000.svg")
 
     # 2010
     render_world_map(gdpinfo, codeinfo, pygal_countries, "2010", "isp_gdp_world_code_2010.svg")
@@ -254,4 +272,4 @@ def test_render_world_map():
 # Make sure the following call to test_render_world_map is commented
 # out when submitting to OwlTest/CourseraTest.
 
-# test_render_world_map()
+#test_render_world_map()
